@@ -1,6 +1,7 @@
 package widgets;
 
 import display.Renderer;
+import util.Scale;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -20,8 +21,9 @@ public class WeatherWidget implements Renderer.OverlayPainter {
 
     private void updateData() {
         WeatherUtil.WeatherData data = WeatherUtil.fetchCurrentWeather();
-        if (data == null) return;
-        
+        if (data == null)
+            return;
+
         if (!data.iconName().equals(lastIconName)) {
             try {
                 weatherIcon = ImageIO.read(new File("resources/icons/weather/" + data.iconName() + ".png"));
@@ -34,68 +36,60 @@ public class WeatherWidget implements Renderer.OverlayPainter {
 
     @Override
     public void paint(Graphics2D g2, int screenW, int screenH) {
-        // In einer echten App würde man dies per Timer machen,
-        // für den Dummy-Call reicht es hier (bzw. wir rufen es einmal pro Frame auf)
         updateData();
         WeatherUtil.WeatherData data = WeatherUtil.fetchCurrentWeather();
-        
-        int w = 240;
-        int h = 145;
+        if (data == null)
+            return;
 
-        int margin = 25;
-        int gap = 25;
-        int x = margin;
-        int y = screenH - (2 * h) - margin - gap;
+        // --- MANUELLE X-POSITIONIERUNG (basierend auf 1080p, Y ist zentriert) ---
+        int widgetW = 196;
+        int widgetH = 118;
+        int cornerR = 41; // Abrundung der Ecken
 
-        // Hintergrund, hellgrau halbtransparent
-        g2.setColor(new Color(210, 210, 210, 160));
-        g2.fillRoundRect(x, y, w, h, 25, 25);
+        int iconSize = 98;
+        int iconX = 12; // X-Position des Icons innerhalb des Kastens
 
-        // --- Temperatur-Badge Dimensionen vorab berechnen ---
-        String tempStr = data.temperature();
-        Font tempFont = new Font("SansSerif", Font.BOLD, 22);
-        g2.setFont(tempFont);
-        FontMetrics fm = g2.getFontMetrics();
+        int fontSize = 43;
+        int textX = 115; // X-Position der Temperatur
+        // ------------------------------------------------------------------------
 
-        int badgePadH = 18;
-        int badgePadV = 1;
-        int badgeW = fm.stringWidth(tempStr) + badgePadH * 2;
-        int badgeH = fm.getAscent() + fm.getDescent() + badgePadV * 2;
+        // Skalieren der Basis-Box
+        int w = Scale.get(widgetW, screenH);
+        int h = Scale.get(widgetH, screenH);
+        int margin = Scale.get(22, screenH);
+        int gap = Scale.get(22, screenH);
 
-        // Badge soll am unteren Ende des Icons sitzen → Icon-Größe
-        // so berechnen, dass es fast die gesamte Widgethöhe ausfüllt,
-        // aber Platz lässt, damit das Badge noch etwas in den Hintergrund ragt
-        int iconSize = (int) (h * 1.1);
+        int startX = margin;
+        int startY = screenH - (2 * h) - margin - gap;
 
-        // Horizontal zentriert, vertikal etwas über die Mitte
-        int iconX = x + (w - iconSize) / 2;
-        // "etwas über die Mitte": Icon endet ca. beim vertikalen Zentrum + badgeH/2
-        // damit das Badge am unteren Rand des Icons positioniert werden kann
-        int overlap = badgeH / 2; // Überlappung Icon-Badge
-        int iconY = y + badgeH / 2 - (int) (overlap * 1.7);
+        // 1. Hintergrund zeichnen (Dunkelgrau)
+        g2.setColor(new Color(40, 40, 40, 180));
+        int arc = Scale.get(cornerR, screenH);
+        g2.fillRoundRect(startX, startY, w, h, arc, arc);
 
-        // Icon zeichnen
+        // 2. Icon zeichnen (V-Zentriert)
+        int sIconSize = Scale.get(iconSize, screenH);
+        int drawIconX = startX + Scale.get(iconX, screenH);
+        int drawIconY = startY + (h - sIconSize) / 2;
+
         if (weatherIcon != null) {
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g2.drawImage(weatherIcon, iconX, iconY, iconSize, iconSize, null);
+            g2.drawImage(weatherIcon, drawIconX, drawIconY, sIconSize, sIconSize, null);
         } else {
             g2.setColor(new Color(255, 215, 0));
-            g2.fillRoundRect(iconX, iconY, iconSize, iconSize, 15, 15);
+            g2.fillOval(drawIconX, drawIconY, sIconSize, sIconSize);
         }
 
-        // --- Badge unten-mittig am Icon, überlappt leicht ---
-        int badgeX = x + (w - badgeW) / 2;
-        int badgeY = iconY + iconSize - overlap * 3; // überlappt den unteren Teil des Icons
-
-        // Badge-Hintergrund: dunkel, semi-transparent, pill-förmig
-        g2.setColor(new Color(100, 100, 100, 210));
-        g2.fillRoundRect(badgeX, badgeY, badgeW, badgeH, badgeH, badgeH);
-
-        // Badge-Text weiß
+        // 3. Temperatur zeichnen (V-Zentriert)
+        Font tempFont = util.FontLoader.getFont(util.FontLoader.INTER_BOLD, Scale.font(fontSize, screenH));
         g2.setFont(tempFont);
         g2.setColor(Color.WHITE);
-        int textX = badgeX + badgePadH;
-        int textY = badgeY + badgePadV + fm.getAscent();
-        g2.drawString(tempStr, textX, textY);
+
+        FontMetrics fm = g2.getFontMetrics();
+        int drawTextX = startX + Scale.get(textX, screenH);
+        // Optische Zentrierung über die Ascent-Höhe
+        int drawTextY = startY + (h + fm.getAscent()) / 2 - Scale.get(3, screenH);
+
+        g2.drawString(data.temperature(), drawTextX, drawTextY);
     }
 }

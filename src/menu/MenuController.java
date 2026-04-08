@@ -4,6 +4,7 @@ import config.ConfigManager;
 import display.LoadingOverlay;
 import display.RenderLoop;
 import display.Renderer;
+import display.FullscreenWindow;
 import slideshow.SlideshowManager;
 
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ public class MenuController {
     private final SlideshowManager slideshow;
     private final ConfigManager config;
     private final LoadingOverlay loadingOverlay;
+    private final FullscreenWindow window;
 
     /** Basis-Root-Pfad aus der Config (z.B. /home/user/Images). Wird bei Ordner-Wechsel aktualisiert. */
     private Path baseRoot;
@@ -44,6 +46,7 @@ public class MenuController {
                           SlideshowManager slideshow,
                           ConfigManager config,
                           LoadingOverlay loadingOverlay,
+                          FullscreenWindow window,
                           Path root) {
         this.overlay        = overlay;
         this.renderer       = renderer;
@@ -51,6 +54,7 @@ public class MenuController {
         this.slideshow      = slideshow;
         this.config         = config;
         this.loadingOverlay = loadingOverlay;
+        this.window         = window;
         this.baseRoot       = root;
         this.activePath     = root;
 
@@ -187,6 +191,10 @@ public class MenuController {
                     // Abbruch → Menü einfach schließen
                     close();
                 }
+            }
+            case "minimize" -> {
+                close();
+                window.minimize();
             }
             case "exit" -> {
                 System.exit(0);

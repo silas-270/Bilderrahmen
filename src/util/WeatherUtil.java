@@ -84,8 +84,12 @@ public class WeatherUtil {
      * Mappt WMO-Codes auf DEINE Icon-Collection.
      */
     private static String mapWmoCodeToIcon(int wmoCode, boolean isDay) {
+        if (!isDay) {
+            return "clear-night";
+        }
+
         return switch (wmoCode) {
-            case 0 -> isDay ? "clear-day" : "clear-night";
+            case 0 -> "clear-day";
             case 1, 2 -> "partly-cloudy";
             case 3 -> "cloudy";
             case 45, 48 -> "fog";

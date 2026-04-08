@@ -6,6 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferStrategy;
+import util.Scale;
 
 /**
  * Erstellt und verwaltet das Vollbild-JFrame.
@@ -91,7 +92,7 @@ public class FullscreenWindow {
                 long held = System.currentTimeMillis() - pressTime;
                 int releaseX = e.getX();
                 int diffX = releaseX - pressX;
-                int threshold = 100; // Pixel für Swipe-Erkennung
+                int threshold = Scale.get(100, getHeight()); // Pixel für Swipe-Erkennung
 
                 // 1. Swipe prüfen
                 if (held < 500 && Math.abs(diffX) > threshold) {
@@ -171,6 +172,11 @@ public class FullscreenWindow {
 
     public void setOnSwipeRight(SwipeCallback callback) {
         this.onSwipeRight = callback;
+    }
+
+    /** Minimiert das Fenster in die Taskleiste. */
+    public void minimize() {
+        frame.setExtendedState(JFrame.ICONIFIED);
     }
 
     /** Beendet die Anwendung und verlässt den Vollbildmodus. */

@@ -1,9 +1,13 @@
 {
   "rootPath": "/home/silas270/Bilderrahmen/Billder",
-  "imageDurationSeconds": 10,
+  "imageDurationSeconds": 60,
   "weatherRefreshIntervalSeconds": 1800,
   "networkRefreshIntervalSeconds": 60,
   "transitionDurationMs": 800,
   "weatherLatitude": 48.5033,
-  "weatherLongitude": 9.1778
+  "weatherLongitude": 9.1778,
+  "haUrl": "http://192.168.178.132:8123/api/",
+  "haToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyNDk1NDAyMjkxNjM0YjZiYTQ5MDIyNzg1NmFiZGYyYiIsImlhdCI6MTc3NTY2NjAwOSwiZXhwIjoyMDkxMDI2MDA5fQ.r7__baWGIKLRt0aWIbi-mH6BmYOUT9n63ZFqQi7tEM8",
+  "haEntityCurrentPower": "sensor.wechselrichter_ac_leistung",
+  "haEntityDailyEnergy": "sensor.wechselrichter_solar_gesamtertrag_heute"
 }

@@ -1,22 +1,18 @@
 {
   "D2:A2:BA:C6:2A:9A": {
-    "name": "Silas Handy",
+    "name": "Silas",
     "ip": "192.168.178.94"
   },
-  "A1:B2:C3:D4:E5:F6": {
-    "name": "Papas iPhone",
-    "ip": "192.168.178.100"
+  "76:48:75:29:AF:C7": {
+    "name": "Smilla",
+    "ip": "192.168.178.117"
   },
-  "11:22:33:44:55:66": {
-    "name": "Mamas Galaxy",
-    "ip": "192.168.178.101"
+  "DA:62:3C:3F:C6:17": {
+    "name": "Mama",
+    "ip": "192.168.178.29"
   },
-  "AA:BB:CC:DD:EE:FF": {
-    "name": "Gast-Tablet",
-    "ip": "192.168.178.102"
-  },
-  "00:1A:2B:3C:4D:5E": {
-    "name": "Smart-TV Wohnzimmer",
-    "ip": "192.168.178.103"
+  "8E:0D:9B:F3:10:E6": {
+    "name": "Papa",
+    "ip": "192.168.178.127"
   }
 }

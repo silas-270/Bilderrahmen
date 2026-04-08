@@ -8,6 +8,7 @@ import menu.MenuOverlay;
 import slideshow.SlideshowManager;
 import widgets.ClockWidget;
 import widgets.NetworkWidget;
+import widgets.SolarWidget;
 import widgets.WeatherWidget;
 
 import java.nio.file.Files;
@@ -26,6 +27,10 @@ import com.formdev.flatlaf.FlatDarkLaf;
 public class Main {
 
     public static void main(String[] args) {
+        // High-DPI-Scaling von Java deaktivieren, da wir unser eigenes Scaling (util.Scale) nutzen.
+        // Das verhindert, dass Widgets auf dem Raspberry Pi (oder anderen HiDPI-Systemen) doppelt skaliert werden.
+        System.setProperty("sun.java2d.uiScale", "1.0");
+
         // FlatLaf initialisieren für modernes Design
         FlatDarkLaf.setup();
 
@@ -67,6 +72,10 @@ public class Main {
         WeatherWidget weatherWidget = new WeatherWidget();
         renderer.addWidgetPainter(weatherWidget);
 
+        // Solar-Widget einrichten (zwischen Wetter und Netzwerk)
+        SolarWidget solarWidget = new SolarWidget();
+        renderer.addWidgetPainter(solarWidget);
+
         // Netzwerk-Widget (Personenanzeige) einrichten
         NetworkWidget networkWidget = new NetworkWidget();
         renderer.addWidgetPainter(networkWidget);
@@ -74,10 +83,18 @@ public class Main {
         // Menü
         MenuOverlay menuOverlay = new MenuOverlay();
         MenuController menuController = new MenuController(
-                menuOverlay, renderer, loop, slideshow, config, loadingOverlay, root);
+                menuOverlay, renderer, loop, slideshow, config, loadingOverlay, window, root);
 
-        // Klick → Menü öffnen/schließen + Button-Auswertung
-        window.setOnClickCallback(menuController::handleClick);
+        // Klick → Prüfen ob Widgets den Klick abfangen, sonst Menü öffnen/schließen
+        window.setOnClickCallback((x, y) -> {
+            boolean handled = solarWidget.handleClick(x, y, window.getWidth(), window.getHeight());
+            if (handled) {
+                // Sofortiges Neuzeichnen erzwingen (Loop aufwecken)
+                loop.setMode(loop.getMode());
+            } else {
+                menuController.handleClick(x, y);
+            }
+        });
 
         // Mausbewegung → Hover-Effekte im Menü
         window.setOnMoveCallback(menuController::handleMouseMove);
