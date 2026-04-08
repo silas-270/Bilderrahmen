@@ -33,8 +33,8 @@ public class MenuOverlay implements Renderer.OverlayPainter {
     private static final Color BUTTON_HOVER    = new Color(75, 75, 75, 255);
     private static final Color BUTTON_TEXT     = new Color(230, 230, 230);
     private static final Color ACCENT          = new Color(100, 180, 255);
-    private static final Color CLOSE_BG        = new Color(180, 50, 50, 255);
-    private static final Color CLOSE_HOVER     = new Color(220, 70, 70, 255);
+    private static final Color DANGER_BG       = new Color(180, 50, 50, 255);
+    private static final Color DANGER_HOVER    = new Color(220, 70, 70, 255);
     private static final Color HEADER_TEXT     = new Color(255, 255, 255);
     private static final Color SEPARATOR       = new Color(80, 80, 80, 120);
 
@@ -121,13 +121,11 @@ public class MenuOverlay implements Renderer.OverlayPainter {
         g2.fillRect(0, 0, screenW, screenH);
 
         // 2. Panel-Höhe berechnen
-        int buttonCount = 3 + personNames.size(); // „Alles" + Personen + „Ordner wählen" + „Beenden"
+        int buttonCount = 4 + personNames.size(); // Alles, Personen, Ordner wählen, Beenden, Schließen
         int contentHeight = HEADER_HEIGHT
                 + (buttonCount * BUTTON_HEIGHT)
                 + ((buttonCount - 1) * BUTTON_GAP)
-                + SEPARATOR_HEIGHT           // Separator vor „Ordner wählen"
-                + BUTTON_HEIGHT              // Schließen-Button
-                + BUTTON_GAP;
+                + (SEPARATOR_HEIGHT * 2);    // Zwei Separatoren (vor Ordner wählen & vor Beenden)
         int panelHeight = PANEL_PADDING * 2 + contentHeight;
 
         // 3. Panel zentrieren
@@ -162,12 +160,15 @@ public class MenuOverlay implements Renderer.OverlayPainter {
         y = drawButton(g2, newAreas, contentX, y, contentW, "📂  Ordner wählen…", "choose_folder", BUTTON_TEXT, false);
         y += BUTTON_GAP;
 
-        // Button: „Beenden"
-        y = drawButton(g2, newAreas, contentX, y, contentW, "Beenden", "exit", BUTTON_TEXT, false);
+        // Zweiter Separator vor Beenden
+        y = drawSeparator(g2, contentX, y, contentW);
+
+        // Button: „Beenden" (jetzt rot)
+        y = drawButton(g2, newAreas, contentX, y, contentW, "Beenden", "exit", HEADER_TEXT, true);
         y += BUTTON_GAP;
 
-        // Button: „✕ Schließen"
-        drawButton(g2, newAreas, contentX, y, contentW, "✕  Schließen", "close", HEADER_TEXT, true);
+        // Button: „✕ Schließen" (jetzt normal)
+        drawButton(g2, newAreas, contentX, y, contentW, "✕  Schließen", "close", BUTTON_TEXT, false);
 
         // Atomar veröffentlichen → Thread-safe für MenuController
         currentButtonAreas = List.copyOf(newAreas);
@@ -223,14 +224,14 @@ public class MenuOverlay implements Renderer.OverlayPainter {
     // Button
 
     private int drawButton(Graphics2D g2, List<ButtonArea> areas, int x, int y, int w,
-                           String label, String action, Color textColor, boolean isClose) {
+                           String label, String action, Color textColor, boolean isDanger) {
         Rectangle bounds = new Rectangle(x, y, w, BUTTON_HEIGHT);
         boolean hovered = bounds.contains(hoverX, hoverY);
 
         // Hintergrund
         Color bg;
-        if (isClose) {
-            bg = hovered ? CLOSE_HOVER : CLOSE_BG;
+        if (isDanger) {
+            bg = hovered ? DANGER_HOVER : DANGER_BG;
         } else {
             bg = hovered ? BUTTON_HOVER : BUTTON_BG;
         }

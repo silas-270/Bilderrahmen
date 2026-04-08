@@ -1,9 +1,9 @@
 {
-  "rootPath": "/home/silas270/Images",
+  "rootPath": "/home/silas270/Bilderrahmen/Billder",
   "imageDurationSeconds": 10,
-  "transitionDurationMs": 800,
   "weatherRefreshIntervalSeconds": 1800,
   "networkRefreshIntervalSeconds": 60,
+  "transitionDurationMs": 800,
   "weatherLatitude": 48.5033,
   "weatherLongitude": 9.1778
 }

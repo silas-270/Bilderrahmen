@@ -14,17 +14,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
+import com.formdev.flatlaf.FlatDarkLaf;
 
 /**
  * Einstiegspunkt für den digitalen Bilderrahmen.
  *
  * Verwendung:
- *   java Main /pfad/zu/bildern   (überschreibt gespeicherten Pfad einmalig)
- *   java Main                    (nutzt persistenten Pfad aus config.json)
+ * java Main /pfad/zu/bildern (überschreibt gespeicherten Pfad einmalig)
+ * java Main (nutzt persistenten Pfad aus config.json)
  */
 public class Main {
 
     public static void main(String[] args) {
+        // FlatLaf initialisieren für modernes Design
+        FlatDarkLaf.setup();
+
         // Konfiguration laden (erstellt config.json mit Defaults falls nicht vorhanden)
         ConfigManager config = ConfigManager.load();
 
@@ -132,7 +136,7 @@ public class Main {
                     Thread.sleep(200); // Häufiger prüfen für reaktionsfreudigeren Timer
                     long now = System.currentTimeMillis();
                     long intervalMs = config.getImageDurationSeconds() * 1000L;
-                    
+
                     if (now - lastInteractionTime.get() >= intervalMs) {
                         lastInteractionTime.set(now);
                         slideshow.next(config.getTransitionDurationMs());

@@ -1,55 +1,44 @@
 package menu;
 
-import java.awt.FileDialog;
-import java.awt.Frame;
+import javax.swing.JFileChooser;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
 
 /**
- * Nutzt java.awt.FileDialog, um das echte, native Betriebssystem-Interface
- * zur Ordnerauswahl anzuzeigen (GTK auf Linux/Fedora, Win32 auf Windows).
+ * Nutzt javax.swing.JFileChooser, um eine Ordnerauswahl zu ermöglichen.
+ * JFileChooser unterstützt im Gegensatz zu java.awt.FileDialog auf Linux/Windows
+ * explizit die Auswahl von Verzeichnissen.
  */
 public class FolderChooser {
 
     /**
-     * Öffnet einen nativen Dialog zur Ordnerauswahl.
+     * Öffnet einen Dialog zur Ordnerauswahl.
      *
      * @param currentRoot Aktueller Pfad als Startpunkt
      * @return Der gewählte Pfad oder null bei Abbruch
      */
     public static Path chooseFolder(Path currentRoot) {
-        // Dieser System-Property-Trick ist wichtig, damit AWT auf vielen
-        // Plattformen (macOS/Linux) den "Ordner-Modus" aktiviert.
-        System.setProperty("apple.awt.fileDialogForDirectories", "true");
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Bilderordner auswählen");
 
-        // Wir erstellen einen unsichtbaren Frame als Parent,
-        // damit der Dialog ein ordentliches "Zuhause" hat.
-        Frame parent = new Frame();
-        FileDialog dialog = new FileDialog(parent, "Bilderordner auswählen", FileDialog.LOAD);
+        // WICHTIG: Dieser Modus erlaubt die Auswahl von Ordnern
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         // Startverzeichnis setzen
         if (currentRoot != null) {
-            dialog.setDirectory(currentRoot.toAbsolutePath().toString());
+            chooser.setCurrentDirectory(currentRoot.toFile());
         }
 
         // Dialog anzeigen (blockiert, bis der Nutzer fertig ist)
-        dialog.setVisible(true);
+        int result = chooser.showOpenDialog(null);
 
-        String directory = dialog.getDirectory();
-        String file = dialog.getFile();
-
-        // Ressourcen wieder freigeben
-        parent.dispose();
-
-        if (directory != null) {
-            // Falls 'file' null ist (passiert bei manchen OS im Ordner-Modus),
-            // nehmen wir nur das Directory.
-            if (file == null) {
-                return Paths.get(directory);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = chooser.getSelectedFile();
+            if (selectedFile != null) {
+                return selectedFile.toPath();
             }
-            return Paths.get(directory, file);
         }
 
-        return null; // Nutzer hat abgebrochen
+        return null; // Nutzer hat abgebrochen oder Fenster geschlossen
     }
 }
