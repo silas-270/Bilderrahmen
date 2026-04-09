@@ -32,10 +32,10 @@ public class ConfigManager {
     private double weatherLatitude = 48.1371;
     private double weatherLongitude = 11.5754;
 
-    private String haUrl = "http://localhost:8123/api/";
-    private String haToken = "DEIN_LANGLEBIGER_ACCESS_TOKEN_HIER";
-    private String haEntityCurrentPower = "sensor.hoymiles_gh_yield_power";
-    private String haEntityDailyEnergy = "sensor.hoymiles_gh_daily_yield";
+
+    private String solarBaseUrl = "http://localhost:8080";
+    private int solarHistoryHours = 24;
+    private int solarHistoryInterval = 15;
 
 
     /**
@@ -153,35 +153,27 @@ public class ConfigManager {
         this.weatherLongitude = weatherLongitude;
     }
 
-    public String getHaUrl() {
-        return haUrl;
+    public String getSolarBaseUrl() {
+        return solarBaseUrl;
     }
 
-    public void setHaUrl(String haUrl) {
-        this.haUrl = haUrl;
+    public void setSolarBaseUrl(String solarBaseUrl) {
+        this.solarBaseUrl = solarBaseUrl;
     }
 
-    public String getHaToken() {
-        return haToken;
+    public int getSolarHistoryHours() {
+        return solarHistoryHours;
     }
 
-    public void setHaToken(String haToken) {
-        this.haToken = haToken;
+    public void setSolarHistoryHours(int solarHistoryHours) {
+        this.solarHistoryHours = solarHistoryHours;
     }
 
-    public String getHaEntityCurrentPower() {
-        return haEntityCurrentPower;
+    public int getSolarHistoryInterval() {
+        return solarHistoryInterval;
     }
 
-    public void setHaEntityCurrentPower(String haEntityCurrentPower) {
-        this.haEntityCurrentPower = haEntityCurrentPower;
-    }
-
-    public String getHaEntityDailyEnergy() {
-        return haEntityDailyEnergy;
-    }
-
-    public void setHaEntityDailyEnergy(String haEntityDailyEnergy) {
-        this.haEntityDailyEnergy = haEntityDailyEnergy;
+    public void setSolarHistoryInterval(int solarHistoryInterval) {
+        this.solarHistoryInterval = solarHistoryInterval;
     }
 }

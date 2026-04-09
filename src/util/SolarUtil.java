@@ -1,17 +1,12 @@
 package util;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import config.ConfigManager;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SolarUtil {
@@ -21,9 +16,17 @@ public class SolarUtil {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    private static SolarData cachedSolarData = new SolarData(0.0, 0.0, new double[8]);
-    private static long lastFetchTime = 0;
-    private static final int REFRESH_INTERVAL_MS = 60000; // 1 Minute
+    private static double lastLivePower = 0;
+    private static double lastDailyEnergy = 0;
+    private static double[] lastHistory = new double[0];
+
+    private static long lastLiveFetch = 0;
+    private static long lastSummaryFetch = 0;
+    private static long lastGraphFetch = 0;
+
+    private static final long LIVE_INTERVAL = 3 * 60 * 1000; // 3 min
+    private static final long SUMMARY_INTERVAL = 10 * 60 * 1000; // 10 min
+    private static final long GRAPH_INTERVAL = 20 * 60 * 1000; // 20 min
 
     public static class SolarData {
         private final double currentPower;
@@ -49,96 +52,129 @@ public class SolarUtil {
         }
     }
 
-    private static class EntityState {
-        String state;
+    // --- JSON Mapping Classes ---
+
+    private static class SummaryResponse {
+        SummaryData data;
     }
 
+    private static class SummaryData {
+        String today_eq;
+        String real_power;
+    }
+
+    private static class LiveResponse {
+        LiveData data;
+    }
+
+    private static class LiveData {
+        LivePower power;
+    }
+
+    private static class LivePower {
+        double pv;
+    }
+
+    private static class RecentResponse {
+        // String range;
+        // int requested_hours;
+        // int interval_minutes;
+        List<RecentPoint> data;
+    }
+
+    private static class RecentPoint {
+        // String time;
+        // long timestamp;
+        double power;
+        // double voltage;
+        // double frequency;
+        // double temperature;
+    }
+
+    // --- Logic ---
+
     public static SolarData fetchSolarData() {
-        long now = System.currentTimeMillis();
-        if (now - lastFetchTime > REFRESH_INTERVAL_MS) {
-            refreshSolarData();
-        }
-        return cachedSolarData;
+        refreshSolarData();
+        return new SolarData(lastLivePower, lastDailyEnergy, lastHistory);
     }
 
     private static void refreshSolarData() {
         try {
             ConfigManager config = ConfigManager.load();
-            
-            // 1. Aktuelle Leistung (Power) abrufen
-            double currentP = 0;
-            try {
-                currentP = fetchSingleValue(config, config.getHaEntityCurrentPower());
-            } catch (Exception e) {
-                System.err.println("[SolarUtil] Fehler bei Power-Sensor: " + e.getMessage());
+            String baseUrl = config.getSolarBaseUrl();
+            if (baseUrl.endsWith("/")) {
+                baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
             }
 
-            // 2. Tagesertrag (Energy) abrufen
-            double dailyE = 0;
-            try {
-                dailyE = fetchSingleValue(config, config.getHaEntityDailyEnergy());
-            } catch (Exception e) {
-                System.err.println("[SolarUtil] Fehler bei Energy-Sensor: " + e.getMessage());
+            long now = System.currentTimeMillis();
+
+            // 1. Summary abrufen (Daily Energy & Fallback Power) - Alle 10 min
+            if (now - lastSummaryFetch > SUMMARY_INTERVAL) {
+                try {
+                    String summaryJson = sendGetRequest(baseUrl + "/api/summary");
+                    SummaryResponse summary = gson.fromJson(summaryJson, SummaryResponse.class);
+                    if (summary != null && summary.data != null) {
+                        lastDailyEnergy = parseDouble(summary.data.today_eq) / 1000.0;
+                        // Wir speichern die real_power nur als Fallback, falls live.power.pv 0 ist
+                        if (lastLivePower == 0) {
+                            lastLivePower = parseDouble(summary.data.real_power);
+                        }
+                    }
+                    lastSummaryFetch = now;
+                } catch (Exception e) {
+                    System.err.println("[SolarUtil] Fehler bei /api/summary: " + e.getMessage());
+                }
             }
 
-            // 3. Historie abrufen
-            double[] history = new double[8];
-            try {
-                history = fetchHistory(config, config.getHaEntityCurrentPower(), 8);
-            } catch (Exception e) {
-                System.err.println("[SolarUtil] Fehler bei Historie: " + e.getMessage());
+            // 2. Live abrufen (Current Power) - Alle 3 min
+            if (now - lastLiveFetch > LIVE_INTERVAL) {
+                try {
+                    String liveJson = sendGetRequest(baseUrl + "/api/live");
+                    LiveResponse live = gson.fromJson(liveJson, LiveResponse.class);
+                    if (live != null && live.data != null && live.data.power != null) {
+                        if (live.data.power.pv > 0) {
+                            lastLivePower = live.data.power.pv;
+                        }
+                    }
+                    lastLiveFetch = now;
+                } catch (Exception e) {
+                    System.err.println("[SolarUtil] Fehler bei /api/live: " + e.getMessage());
+                }
             }
 
-            cachedSolarData = new SolarData(currentP, dailyE, history);
-            lastFetchTime = System.currentTimeMillis();
+            // 3. Graph abrufen (Historie) - Alle 20 min
+            int hours = config.getSolarHistoryHours();
+            int interval = config.getSolarHistoryInterval();
+            int expectedPoints = (hours * 60) / interval;
+
+            if (now - lastGraphFetch > GRAPH_INTERVAL || lastHistory.length != expectedPoints) {
+                try {
+                    String url = String.format("%s/api/recent?hours=%d&interval=%d", baseUrl, hours, interval);
+                    String graphJson = sendGetRequest(url);
+                    RecentResponse recent = gson.fromJson(graphJson, RecentResponse.class);
+
+                    if (recent != null && recent.data != null) {
+                        List<RecentPoint> points = recent.data;
+                        double[] history = new double[points.size()];
+                        for (int i = 0; i < points.size(); i++) {
+                            history[i] = points.get(i).power;
+                        }
+                        lastHistory = history;
+                    }
+                    lastGraphFetch = now;
+                } catch (Exception e) {
+                    System.err.println("[SolarUtil] Fehler bei /api/recent: " + e.getMessage());
+                }
+            }
+
         } catch (Exception e) {
             System.err.println("[SolarUtil] KRITISCHER FEHLER beim Update: " + e.getMessage());
         }
     }
 
-    private static double fetchSingleValue(ConfigManager config, String entityId) throws Exception {
-        String json = sendGetRequest(config, "states/" + entityId);
-        EntityState entity = gson.fromJson(json, EntityState.class);
-        return parseDouble(entity.state);
-    }
-
-    private static double[] fetchHistory(ConfigManager config, String entityId, int hours) throws Exception {
-        String startTime = Instant.now()
-                .minus(Duration.ofHours(hours))
-                .atOffset(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ISO_INSTANT);
-
-        String json = sendGetRequest(config, "history/period/" + startTime + "?filter_entity_id=" + entityId);
-
-        Type listType = new TypeToken<List<List<EntityState>>>() {
-        }.getType();
-        List<List<EntityState>> historyData = gson.fromJson(json, listType);
-
-        if (historyData == null || historyData.isEmpty() || historyData.get(0).isEmpty()) {
-            return new double[hours];
-        }
-
-        List<EntityState> states = historyData.get(0);
-        double[] result = new double[hours];
-        if (states.size() >= hours) {
-            for (int i = 0; i < hours; i++) {
-                int index = (int) ((double) i / (hours - 1) * (states.size() - 1));
-                result[i] = parseDouble(states.get(index).state);
-            }
-        } else {
-            for (int i = 0; i < states.size(); i++) {
-                result[i] = parseDouble(states.get(i).state);
-            }
-        }
-        
-        return result;
-    }
-
-    private static String sendGetRequest(ConfigManager config, String endpoint) throws Exception {
-        String fullUrl = config.getHaUrl() + endpoint;
+    private static String sendGetRequest(String url) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fullUrl))
-                .header("Authorization", "Bearer " + config.getHaToken())
+                .uri(URI.create(url))
                 .header("Content-Type", "application/json")
                 .GET()
                 .build();
@@ -151,6 +187,8 @@ public class SolarUtil {
     }
 
     private static double parseDouble(String value) {
+        if (value == null)
+            return 0.0;
         try {
             return Double.parseDouble(value);
         } catch (Exception e) {
