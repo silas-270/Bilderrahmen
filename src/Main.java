@@ -17,6 +17,13 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 import com.formdev.flatlaf.FlatDarkLaf;
 
+/*
+Push to pi:
+git add .
+git commit -m "Changes"
+git push ccass master
+*/
+
 /**
  * Einstiegspunkt für den digitalen Bilderrahmen.
  *
