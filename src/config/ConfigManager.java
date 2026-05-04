@@ -33,7 +33,8 @@ public class ConfigManager {
     private double weatherLongitude = 11.5754;
 
 
-    private String solarBaseUrl = "http://localhost:8080";
+    private String haIp = "192.168.178.132";
+    private String haToken = "";
     private int solarHistoryHours = 24;
     private int solarHistoryInterval = 15;
 
@@ -153,12 +154,20 @@ public class ConfigManager {
         this.weatherLongitude = weatherLongitude;
     }
 
-    public String getSolarBaseUrl() {
-        return solarBaseUrl;
+    public String getHaIp() {
+        return haIp;
     }
 
-    public void setSolarBaseUrl(String solarBaseUrl) {
-        this.solarBaseUrl = solarBaseUrl;
+    public void setHaIp(String haIp) {
+        this.haIp = haIp;
+    }
+
+    public String getHaToken() {
+        return haToken;
+    }
+
+    public void setHaToken(String haToken) {
+        this.haToken = haToken;
     }
 
     public int getSolarHistoryHours() {

@@ -6,7 +6,8 @@
   "transitionDurationMs": 800,
   "weatherLatitude": 48.5033,
   "weatherLongitude": 9.1778,
-  "solarBaseUrl": "http://192.168.178.132:8080",
+  "haIp": "192.168.178.132",
+  "haToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMTZkYWIyNjc2NzE0Y2IwODAxNDVkOTQ2MjIxMDYxZSIsImlhdCI6MTc3NzYzNzE1NCwiZXhwIjoyMDkyOTk3MTU0fQ.nEdXOm_n1dC6qnX55nvMmzZ1cvFCrf8Z-9S2eRVXvzI",
   "solarHistoryHours": 1,
-  "solarHistoryInterval": 15
+  "solarHistoryInterval": 5
 }

@@ -59,12 +59,12 @@ public class SolarWidget implements Renderer.OverlayPainter {
         String value;
         String unit;
         if (showDaily) {
-            value = String.format("%.1f", data.getDailyEnergy());
+            value = String.format("%.2f", data.getDailyEnergy());
             unit = "kWh";
         } else {
             double p = data.getCurrentPower();
             if (p >= 1000) {
-                value = String.format("%.1f", p / 1000.0);
+                value = String.format("%.2f", p / 1000.0);
                 unit = "kW";
             } else {
                 value = String.valueOf((int) p);
