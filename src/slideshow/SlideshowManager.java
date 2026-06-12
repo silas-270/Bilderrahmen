@@ -13,7 +13,7 @@ public class SlideshowManager {
     private int pointer = 0;
 
     private BufferedImage current;
-    private BufferedImage preloaded;
+    private volatile BufferedImage preloaded;
     
     // --- Transition State ---
     private BufferedImage fadingImage;
@@ -164,7 +164,11 @@ public class SlideshowManager {
         Path nextPath = entries.get(nextIndex).path;
 
         Thread preloadThread = new Thread(() -> {
-            preloaded = readImage(nextPath);
+            // Das Bild vollständig in einer lokalen Variable laden,
+            // bevor es dem geteilten Feld zugewiesen wird.
+            // So sieht der Renderer-Thread niemals ein halb-dekodiertes Bild.
+            BufferedImage loaded = readImage(nextPath);
+            preloaded = loaded; // atomic write (volatile)
         });
         preloadThread.setDaemon(true); // don't block JVM shutdown
         preloadThread.start();
