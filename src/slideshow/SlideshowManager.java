@@ -14,7 +14,7 @@ public class SlideshowManager {
 
     private BufferedImage current;
     private volatile BufferedImage preloaded;
-    
+
     // --- Transition State ---
     private BufferedImage fadingImage;
     private ImageEntry fadingEntry;
@@ -69,8 +69,9 @@ public class SlideshowManager {
      * Starts a transition with the given duration.
      */
     public BufferedImage next(int durationMs) {
-        if (entries.isEmpty()) return null;
-        
+        if (entries.isEmpty())
+            return null;
+
         // Save current as fading image
         if (current != null) {
             fadingImage = current;
@@ -78,7 +79,7 @@ public class SlideshowManager {
             transitionStartTime = System.currentTimeMillis();
             transitionDurationMs = durationMs;
         }
-        
+
         int newPointer = (pointer + 1) % entries.size();
 
         // Neu mischen, wenn die Liste einmal komplett durchgelaufen ist
@@ -103,15 +104,16 @@ public class SlideshowManager {
      * Goes back to the previous image. Wraps around at the beginning.
      */
     public BufferedImage previous(int durationMs) {
-        if (entries.isEmpty()) return null;
-        
+        if (entries.isEmpty())
+            return null;
+
         if (current != null) {
             fadingImage = current;
             fadingEntry = getCurrentEntry();
             transitionStartTime = System.currentTimeMillis();
             transitionDurationMs = durationMs;
         }
-        
+
         pointer = (pointer - 1 + entries.size()) % entries.size();
         preloaded = null; // preload is now stale
         loadCurrent();
@@ -130,15 +132,22 @@ public class SlideshowManager {
      * Returns the current ImageEntry (for rotation info etc.).
      */
     public ImageEntry getCurrentEntry() {
-        if (entries.isEmpty()) return null;
+        if (entries.isEmpty())
+            return null;
         return entries.get(pointer);
     }
-    
-    public BufferedImage getFadingImage() { return fadingImage; }
-    public ImageEntry getFadingEntry() { return fadingEntry; }
-    
+
+    public BufferedImage getFadingImage() {
+        return fadingImage;
+    }
+
+    public ImageEntry getFadingEntry() {
+        return fadingEntry;
+    }
+
     public float getTransitionProgress() {
-        if (transitionStartTime == 0 || transitionDurationMs <= 0) return 1.0f;
+        if (transitionStartTime == 0 || transitionDurationMs <= 0)
+            return 1.0f;
         float progress = (System.currentTimeMillis() - transitionStartTime) / (float) transitionDurationMs;
         if (progress >= 1.0f) {
             resetTransition();
@@ -159,7 +168,8 @@ public class SlideshowManager {
     }
 
     private void preloadNext() {
-        if (entries.size() <= 1) return;
+        if (entries.size() <= 1)
+            return;
         int nextIndex = (pointer + 1) % entries.size();
         Path nextPath = entries.get(nextIndex).path;
 
@@ -176,10 +186,43 @@ public class SlideshowManager {
 
     private static BufferedImage readImage(Path path) {
         try {
-            return ImageIO.read(path.toFile());
+            BufferedImage raw = ImageIO.read(path.toFile());
+            if (raw == null)
+                return null;
+
+            int w = raw.getWidth();
+            int h = raw.getHeight();
+
+            // Maximale sichere Dimension (z.B. für Full-HD Screens).
+            // Schützt vor GPU-Textur-Überlauf (Wrap-Around Artefakten).
+            // Falls du einen 4K Monitor hast, setze es auf 3840.
+            final int MAX_DIMENSION = 1920;
+
+            if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+                // Skalierungsfaktor berechnen, um Proportionen zu erhalten
+                double scale = Math.min((double) MAX_DIMENSION / w, (double) MAX_DIMENSION / h);
+                w = (int) (w * scale);
+                h = (int) (h * scale);
+            }
+
+            // Neues Bild im sicheren Standard-Farbmodell anlegen
+            BufferedImage normalized = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g2 = normalized.createGraphics();
+
+            // Hochwertige Skalierung aktivieren
+            g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+            // Bild (ggf. verkleinert) zeichnen
+            g2.drawImage(raw, 0, 0, w, h, null);
+            g2.dispose();
+
+            return normalized;
+
         } catch (IOException e) {
             System.err.println("Could not load image: " + path + " — " + e.getMessage());
             return null;
         }
     }
+
 }
